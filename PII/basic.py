@@ -77,6 +77,18 @@ while True:
                 cv2.polylines(frame, [area_np], True, (0, 255, 0), 2)
                 cv2.putText(frame, f"{parking_id}", tuple(area[0]), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1)
 
+    # Tastenanweisungen oben rechts einfügen
+    instructions = [
+        "Leertaste: Pause/Weiter",
+        "S: Screenshot speichern",
+        "Q: Beenden"
+    ]
+
+    x_offset = frame.shape[1] - 300
+    y_offset = 20
+    for i, text in enumerate(instructions):
+        cv2.putText(frame, text, (x_offset, y_offset + i * 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+
     # Frame anzeigen
     cv2.imshow("RGB", frame)
 

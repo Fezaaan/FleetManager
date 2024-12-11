@@ -101,6 +101,20 @@ while True:
         cv2.putText(display_frame, "Enter Parking ID:", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
         cv2.putText(display_frame, current_parking_id, (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
+    # Zeige die Tastenanweisungen oben rechts im Frame
+    instructions = [
+        "Linksklick: Punkt setzen",
+        "Rechtsklick: Parkplatz entfernen",
+        "Enter: Parkplatz-ID speichern",
+        "Z: Letzten Punkt entfernen",
+        "Q: Beenden"
+    ]
+
+    x_offset = display_frame.shape[1] - 300
+    y_offset = 20
+    for i, text in enumerate(instructions):
+        cv2.putText(display_frame, text, (x_offset, y_offset + i * 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+
     # Bild anzeigen
     cv2.imshow("Image", display_frame)
 
