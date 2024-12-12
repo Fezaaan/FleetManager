@@ -31,6 +31,15 @@ with open("coco.txt", "r") as my_file:
 screenshot_counter = 0
 paused = False  # Status für Pause
 
+# Funktion zur Aktualisierung der JSON-Datei
+def update_json():
+    with open("all_parkings.json", "w") as json_file:
+        json.dump({
+            "global_coordinates": global_coordinates,
+            "parkings": parkings
+        }, json_file, indent=4)
+    print("JSON-Datei wurde aktualisiert.")
+
 # Hauptschleife
 while True:
     if not paused:
@@ -68,14 +77,29 @@ while True:
                         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                         cv2.circle(frame, (cx, cy), 3, (0, 0, 255), -1)
                         list_objects.append(class_name)
+                        print(f"Auto erkannt in Parkplatz ID: {parking_id}, Klasse: {class_name}")
 
             # Parkplatz einfärben basierend auf dem Status
             if len(list_objects) > 0:
+                # Parkplatz rot einfärben
                 cv2.polylines(frame, [area_np], True, (0, 0, 255), 2)
                 cv2.putText(frame, f"{parking_id}", tuple(area[0]), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), 1)
+
+                # Setze das "car"-Attribut auf True
+                if not parking["car"]:  # Nur wenn noch nicht True
+                    parking["car"] = True
+                    print(f"Parkplatz {parking_id} wurde auf 'belegt' gesetzt.")
+                    update_json()  # Aktualisiere die JSON-Datei
             else:
+                # Parkplatz grün einfärben
                 cv2.polylines(frame, [area_np], True, (0, 255, 0), 2)
                 cv2.putText(frame, f"{parking_id}", tuple(area[0]), cv2.FONT_HERSHEY_COMPLEX, 0.5, (255, 255, 255), 1)
+
+                # Setze das "car"-Attribut auf False
+                if parking["car"]:  # Nur wenn es aktuell True ist
+                    parking["car"] = False
+                    print(f"Parkplatz {parking_id} wurde auf 'frei' gesetzt.")
+                    update_json()  # Aktualisiere die JSON-Datei
 
     # Tastenanweisungen oben rechts einfügen
     instructions = [

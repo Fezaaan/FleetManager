@@ -138,7 +138,9 @@ while True:
             else:
                 parking_data = {
                     "id": current_parking_id,
-                    "coordinates": points
+                    "coordinates": points,
+                    "car":False,
+                    "license_plate":"",
                 }
                 all_parkings.append(parking_data)  # Parkplatz zur Liste hinzufügen
                 print(f"Parkplatz-ID {current_parking_id} mit Koordinaten {points} wurde gespeichert.")
