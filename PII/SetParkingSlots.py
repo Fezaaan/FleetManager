@@ -9,6 +9,37 @@ global_coordinates = {}  # Globale Fensterkoordinaten
 current_parking_id = ""  # Zwischenspeicher für die Eingabe der Parkplatz-ID
 selected_parking = None  # Für das Löschen eines Parkplatzes
 
+# Funktion zur Initialisierung der JSON-Datei
+def initialize_json():
+    global global_coordinates, all_parkings
+    try:
+        with open("all_parkings.json", "r") as json_file:
+            data = json.load(json_file)
+            global_coordinates = data.get("global_coordinates", calculate_global_coordinates(frame))
+            all_parkings = data.get("parkings", [])
+            print("JSON-Datei erfolgreich geladen.")
+    except (FileNotFoundError, json.JSONDecodeError):
+        print("JSON-Datei nicht gefunden oder leer. Erstelle Standardstruktur...")
+        with open("all_parkings.json", "w") as json_file:
+            default_structure = {
+                "global_coordinates": calculate_global_coordinates(frame),
+                "parkings": []
+            }
+            json.dump(default_structure, json_file, indent=4)
+        global_coordinates = calculate_global_coordinates(frame)
+        all_parkings = []
+
+# Funktion zur Berechnung der globalen Fensterkoordinaten
+def calculate_global_coordinates(frame):
+    """Berechnet die globalen Fensterkoordinaten (ul, ur, ol, or) basierend auf der Bildgröße."""
+    h, w = frame.shape[:2]  # Höhe und Breite des Bildes
+    return {
+        "ul": [0, h],         # Unten links
+        "ur": [w, h],         # Unten rechts
+        "ol": [0, 0],         # Oben links
+        "or": [w, 0]          # Oben rechts
+    }
+
 # Funktion zur Verarbeitung von Mausaktionen
 def mouse_callback(event, x, y, flags, param):
     global points, selected_parking, all_parkings, frame
@@ -51,24 +82,6 @@ def reload_parkings(frame):
     except FileNotFoundError:
         print("JSON-Datei nicht gefunden. Eine neue Datei wird erstellt.")
 
-reload_parkings(frame)
-
-# Funktion zur Berechnung der globalen Fensterkoordinaten
-def calculate_global_coordinates(frame):
-    """Berechnet die globalen Fensterkoordinaten (ul, ur, ol, or) basierend auf der Bildgröße."""
-    h, w = frame.shape[:2]  # Höhe und Breite des Bildes
-    return {
-        "ul": [0, h],         # Unten links
-        "ur": [w, h],         # Unten rechts
-        "ol": [0, 0],         # Oben links
-        "or": [w, 0]          # Oben rechts
-    }
-
-# Berechnung der globalen Koordinaten einmalig beim Start
-if not global_coordinates:
-    global_coordinates = calculate_global_coordinates(frame)
-    print("Globale Koordinaten des Fensters:", global_coordinates)
-
 # Funktion zum Aktualisieren der JSON-Datei
 def update_json():
     with open("all_parkings.json", "w") as json_file:
@@ -77,6 +90,9 @@ def update_json():
             "parkings": all_parkings
         }, json_file, indent=4)
     print("JSON-Datei wurde aktualisiert.")
+
+# JSON initialisieren
+initialize_json()
 
 # Hauptschleife
 while True:
@@ -139,8 +155,8 @@ while True:
                 parking_data = {
                     "id": current_parking_id,
                     "coordinates": points,
-                    "car":False,
-                    "license_plate":"",
+                    "car": False,
+                    "license_plate": "",
                 }
                 all_parkings.append(parking_data)  # Parkplatz zur Liste hinzufügen
                 print(f"Parkplatz-ID {current_parking_id} mit Koordinaten {points} wurde gespeichert.")
