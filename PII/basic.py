@@ -2,10 +2,28 @@ import cv2
 import pandas as pd
 import numpy as np
 import json
+import time
+from paho.mqtt import client as mqtt
 from ultralytics import YOLO
 
 # YOLOv8 Model laden
 model = YOLO('yolov8s.pt')
+
+# MQTT-Setup
+CONNECTION_STRING = "HostName=ProjektLabor.azure-devices.net;DeviceId=OnlineSimulator;SharedAccessKey=Lfp1qcai6gyHk1XTGMC3HO2O0lmB7kUy4eajDG+/Ajw="
+MQTT_TOPIC_PUBLISH = "devices/OnlineSimulator/messages/events/"
+
+# Callback-Funktion, die ausgeführt wird, wenn eine Nachricht erfolgreich gesendet wurde
+def on_publish(client, userdata, mid):
+    print(f"Nachricht erfolgreich veröffentlicht. Message ID: {mid}")
+
+# MQTT-Client initialisieren
+client = mqtt.Client()
+client.username_pw_set(username="", password=CONNECTION_STRING)
+client.tls_set()
+client.on_publish = on_publish  # Callback-Funktion setzen
+client.connect("ProjektLabor.azure-devices.net", 8883, keepalive=60)
+client.loop_start()
 
 # JSON-Datei laden
 with open("all_parkings.json", "r") as json_file:
@@ -31,7 +49,7 @@ with open("coco.txt", "r") as my_file:
 screenshot_counter = 0
 paused = False  # Status für Pause
 
-# Funktion zur Aktualisierung der JSON-Datei
+# Funktion zur Aktualisierung der JSON-Datei und Senden an Azure
 def update_json():
     with open("all_parkings.json", "w") as json_file:
         json.dump({
@@ -39,6 +57,18 @@ def update_json():
             "parkings": parkings
         }, json_file, indent=4)
     print("JSON-Datei wurde aktualisiert.")
+
+    # JSON-Daten an Azure senden
+    with open("all_parkings.json", "r") as json_file:
+        data = json.load(json_file)
+        data["timestamp"] = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+        payload = json.dumps(data)
+        print(f"Sende JSON-Daten an Azure: {payload}")
+        result = client.publish(MQTT_TOPIC_PUBLISH, payload)
+        if result.rc == 0:
+            print("Nachricht wurde erfolgreich in die Warteschlange gestellt.")
+        else:
+            print(f"Fehler beim Senden der Nachricht. Fehlercode: {result.rc}")
 
 # Hauptschleife
 while True:
@@ -89,7 +119,7 @@ while True:
                 if not parking["car"]:  # Nur wenn noch nicht True
                     parking["car"] = True
                     print(f"Parkplatz {parking_id} wurde auf 'belegt' gesetzt.")
-                    update_json()  # Aktualisiere die JSON-Datei
+                    update_json()  # Aktualisiere die JSON-Datei und sende an Azure
             else:
                 # Parkplatz grün einfärben
                 cv2.polylines(frame, [area_np], True, (0, 255, 0), 2)
@@ -99,7 +129,7 @@ while True:
                 if parking["car"]:  # Nur wenn es aktuell True ist
                     parking["car"] = False
                     print(f"Parkplatz {parking_id} wurde auf 'frei' gesetzt.")
-                    update_json()  # Aktualisiere die JSON-Datei
+                    update_json()  # Aktualisiere die JSON-Datei und sende an Azure
 
     # Tastenanweisungen oben rechts einfügen
     instructions = [
@@ -131,3 +161,5 @@ while True:
 # Ressourcen freigeben
 cap.release()
 cv2.destroyAllWindows()
+client.loop_stop()
+client.disconnect()
